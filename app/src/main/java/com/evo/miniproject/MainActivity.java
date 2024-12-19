@@ -1,32 +1,75 @@
 package com.evo.miniproject;
 
-import android.arch.lifecycle.ViewModel;
-import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.widget.SearchView;
+import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.Observer;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.evo.miniproject.model.ResponseModel;
 import com.evo.miniproject.viewmodel.MainViewModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ViewModel mViewModel;
+    private MainViewModel mViewModel;
+    private SearchView mSearchView;
+    private RecyclerView mRecyclerView;
+    private MainAdapter mainAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        mViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+        initVariable();
+        initAction();
+    }
+
+    private void initAction() {
+        mViewModel.getUser().observe(this, new Observer<List<ResponseModel>>() {
+            @Override
+            public void onChanged(List<ResponseModel> responseModels) {
+                mainAdapter.replaceData(responseModels);
+            }
         });
+        mViewModel.getError().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String response) {
+                Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+            }
+        });
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                if (!query.isEmpty()) {
+                    mViewModel.search(query);
+                }
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                if (newText.isEmpty()) {
+                    mViewModel.getPost();
+                }
+                return false;
+            }
+        });
+    }
+
+    private void initVariable() {
+        mViewModel = new MainViewModel();
+        mSearchView = findViewById(R.id.svData);
+        mRecyclerView = findViewById(R.id.rvData);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        mainAdapter = new MainAdapter(this, new ArrayList<>());
+        mRecyclerView.setAdapter(mainAdapter);
+        mViewModel.getPost();
     }
 
 }

@@ -8,17 +8,15 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import retrofit.converter.JacksonConverter;
+
 import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class RetrofitHttpCall {
-    private OkHttpClient okHttpClient;
+    protected OkHttpClient okHttpClient;
     protected Retrofit client;
-    public static RetrofitHttpsCall getInstance(String urlApi) {
-        return new RetrofitHttpsCall(urlApi);
-    }
 
-    private RetrofitHttpsCall(String urlApi) {
+    private RetrofitHttpCall(String urlApi) {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(chain -> {
             Request original = chain.request();
@@ -35,17 +33,21 @@ public class RetrofitHttpCall {
         jacksonMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
         okHttpClient = httpClient.readTimeout(60, TimeUnit.SECONDS)
                 .connectTimeout(60, TimeUnit.SECONDS)
-
                 .build();
 
         jacksonMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
         client = new Retrofit.Builder()
                 .baseUrl(urlApi)
-//                .addConverterFactory(JacksonConverterFa.create(jacksonMapper))
+                .addConverterFactory(JacksonConverterFactory.create(jacksonMapper))
                 .client(okHttpClient)
                 .build();
     }
+
+    public static RetrofitHttpCall getInstance(String urlApi) {
+        return new RetrofitHttpCall(urlApi);
+    }
+
 
     public <T> T create(final Class<T> service) {
         return client.create(service);
